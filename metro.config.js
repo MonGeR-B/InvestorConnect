@@ -1,11 +1,19 @@
-const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const {getDefaultConfig} = require('@react-native/metro-config');
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('metro-config').MetroConfig}
- */
-const config = {};
-
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = (async () => {
+  const config = await getDefaultConfig(__dirname);
+  return {
+    ...config,
+    server: {
+      ...config.server,
+      enhanceMiddleware: (middleware) => (req, res, next) => {
+        if (req.url.endsWith('/symbolicate')) {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({stack: []}));
+          return;
+        }
+        return middleware(req, res, next);
+      },
+    },
+  };
+})();
